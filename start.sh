@@ -2,15 +2,26 @@
 
 # Reset iC880a PIN
 SX1301_RESET_BCM_PIN=25
-echo "$SX1301_RESET_BCM_PIN"  > /sys/class/gpio/export 
-echo "out" > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/direction 
-echo "0"   > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/value 
-sleep 0.1  
-echo "1"   > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/value 
-sleep 0.1  
-echo "0"   > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/value
-sleep 0.1
-echo "$SX1301_RESET_BCM_PIN"  > /sys/class/gpio/unexport 
+# Use pinctrl if available 
+if command -v pinctrl 2>&1 >/dev/null
+then
+  pinctrl set $SX1301_RESET_BCM_PIN op dl
+  sleep 0.1
+  pinctrl set $SX1301_RESET_BCM_PIN op dh
+  sleep 0.1
+  pinctrl set $SX1301_RESET_BCM_PIN op dl
+  sleep 0.1
+else
+  echo "$SX1301_RESET_BCM_PIN" > /sys/class/gpio/export
+  echo "out" > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/direction
+  echo "0" > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/value
+  sleep 0.1
+  echo "1" > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/value
+  sleep 0.1
+  echo "0" > /sys/class/gpio/gpio$SX1301_RESET_BCM_PIN/value
+  sleep 0.1
+  echo "$SX1301_RESET_BCM_PIN"  > /sys/class/gpio/unexport 
+fi
 
 # Test the connection, wait if needed.
 while [[ $(ping -c1 google.com 2>&1 | grep " 0% packet loss") == "" ]]; do
